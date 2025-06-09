@@ -55,7 +55,7 @@ if page == "Prediksi Individu":
     with st.form("form_prediksi"):
         visits = st.number_input(tr("🔁 Frekuensi Kunjungan per Bulan", "🔁 Visit Frequency per Month"), 0, 30, 5)
         spending = st.number_input(tr("💸 Pengeluaran per Kunjungan (Rp)", "💸 Spending per Visit (Rp)"), 0, step=1000, value=75000)
-        time_spent = st.slider(tr("🕒 Rata-rata Waktu di Cafe (menit)", "🕒 Average Time in Cafe (min)"), 0, 300, 90)
+        time_spent = st.slider(tr("🕒 Rata-rata Waktu di Cafe (menit)", "🕒 Average Time in Cafe (min)"), 0, 126, 90)
         gender = st.selectbox(tr("👤 Jenis Kelamin", "👤 Gender"), le_gender.classes_)
         membership = st.selectbox(tr("🎫 Status Membership", "🎫 Membership Status"), le_membership.classes_)
         submitted = st.form_submit_button(tr("🚀 Prediksi", "🚀 Predict"))
