@@ -113,29 +113,76 @@ if page == "Prediksi Individu":
             st.info(tr("📌 Saran: Tawarkan membership eksklusif.", "📌 Tip: Offer exclusive membership benefits."))
         elif pred == "Royal":
             st.info(tr("📌 Saran: Beri reward poin atau akses VIP.", "📌 Tip: Provide loyalty rewards or VIP access."))
+    
 
 elif page == "Prediksi Massal":
     st.title(tr("📂 Prediksi Massal dari File CSV", "📂 Batch Prediction from CSV"))
     uploaded = st.file_uploader(tr("Unggah file CSV dengan kolom yang dibutuhkan:", "Upload a CSV file with required columns:"), type=["csv"])
     if uploaded:
-        df_batch = pd.read_csv(uploaded)
-        df_batch['Gender_Encoded'] = le_gender.transform(df_batch['Gender'])
-        df_batch['Membership_Status_Encoded'] = le_membership.transform(df_batch['Membership_Status'])
+        try:
+            df_batch = pd.read_csv(uploaded)
 
-        X_batch = df_batch[['Age', 'Gender_Encoded', 'Visit_Frequency',
-                            'Spending_per_Visit', 'Time_Spent_in_Cafe',
-                            'Membership_Status_Encoded']]
+            st.subheader(tr("📋 Pratinjau Data", "📋 Data Preview"))
+            st.dataframe(df_batch.head())
 
-        df_batch['Prediksi'] = model.predict(X_batch.values)
-        df_batch['Probabilitas_Tertinggi'] = model.predict_proba(X_batch.values).max(axis=1).round(2)
+            # Daftar kolom yang dibutuhkan
+            required_columns = ['Age', 'Gender', 'Visit_Frequency', 'Spending_per_Visit', 'Time_Spent_in_Cafe', 'Membership_Status']
+            missing_columns = [col for col in required_columns if col not in df_batch.columns]
 
-        st.success(tr("✅ Berhasil diprediksi!", "✅ Successfully predicted!"))
-        st.dataframe(df_batch.head())
+            st.subheader(tr("✅ Validasi Format CSV", "✅ CSV Format Validation"))
 
-        st.download_button(tr("⬇️ Unduh Hasil Prediksi", "⬇️ Download Prediction Results"),
-                           data=df_batch.to_csv(index=False),
-                           file_name="hasil_prediksi.csv",
-                           mime="text/csv")
+            # Checklist validasi kolom
+            for col in required_columns:
+                if col in df_batch.columns:
+                    st.markdown(f"✅ {col}")
+                else:
+                    st.markdown(f"❌ **{col}** {tr('tidak ditemukan.', 'not found.')}")
+
+            if missing_columns:
+                st.error(tr("Beberapa kolom penting tidak ada. Silakan periksa kembali file CSV Anda.",
+                            "Some required columns are missing. Please recheck your CSV file."))
+            else:
+                try:
+                    # Cek isi kolom Gender & Membership
+                    invalid_gender = df_batch[~df_batch['Gender'].isin(le_gender.classes_)]
+                    invalid_membership = df_batch[~df_batch['Membership_Status'].isin(le_membership.classes_)]
+
+                    if not invalid_gender.empty or not invalid_membership.empty:
+                        st.warning(tr("Beberapa baris memiliki nilai yang tidak dikenali.", 
+                                      "Some rows contain unrecognized values."))
+
+                        if not invalid_gender.empty:
+                            st.error(tr(f"Nilai tidak valid di kolom Gender:\n{invalid_gender['Gender'].unique()}",
+                                        f"Invalid values in Gender column:\n{invalid_gender['Gender'].unique()}"))
+
+                        if not invalid_membership.empty:
+                            st.error(tr(f"Nilai tidak valid di kolom Membership_Status:\n{invalid_membership['Membership_Status'].unique()}",
+                                        f"Invalid values in Membership_Status column:\n{invalid_membership['Membership_Status'].unique()}"))
+                    else:
+                        # Lanjut jika semua valid
+                        df_batch['Gender_Encoded'] = le_gender.transform(df_batch['Gender'])
+                        df_batch['Membership_Status_Encoded'] = le_membership.transform(df_batch['Membership_Status'])
+
+                        X_batch = df_batch[['Age', 'Gender_Encoded', 'Visit_Frequency',
+                                            'Spending_per_Visit', 'Time_Spent_in_Cafe',
+                                            'Membership_Status_Encoded']]
+
+                        df_batch['Prediksi'] = model.predict(X_batch.values)
+                        df_batch['Probabilitas_Tertinggi'] = model.predict_proba(X_batch.values).max(axis=1).round(2)
+
+                        st.success(tr("✅ Semua baris berhasil diprediksi!", "✅ All rows successfully predicted!"))
+                        st.dataframe(df_batch.head())
+
+                        csv_result = df_batch.to_csv(index=False).encode('utf-8')
+                        st.download_button(label=tr("⬇️ Unduh Hasil Prediksi", "⬇️ Download Prediction Results"),
+                                           data=csv_result,
+                                           file_name="hasil_prediksi.csv",
+                                           mime="text/csv")
+                except Exception as e:
+                    st.error(tr(f"Gagal memproses data: {e}", f"Failed to process data: {e}"))
+
+        except Exception as e:
+            st.error(tr(f"Gagal membaca file: {e}", f"Failed to read file: {e}"))
 
 elif page == "Aturan":
     st.title("📖 " + tr("Aturan Klasifikasi Pelanggan", "Customer Classification Rules"))
