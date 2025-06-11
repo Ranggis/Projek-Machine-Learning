@@ -247,7 +247,7 @@ elif page == "Tentang":
     - Multi-page layout & dark mode
     - Language support: English & Indonesian
 
-    Created by: **Ranggis x Kurumi**
+    Created by: **Kelompok 1**
     """))
 
 # Footer
